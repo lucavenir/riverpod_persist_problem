@@ -1,9 +1,10 @@
-import 'dart:convert';
+// in this file, uncomment the following lines to reproduce the issue, even with a hot reload
+// import 'dart:convert';
 import 'dart:math' as math;
 
 import 'package:flutter_riverpod/experimental/persist.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
-import 'package:riverpod_persist_problem/storage_provider.dart';
+// import 'package:riverpod_persist_problem/storage_provider.dart';
 
 part 'history_provider.g.dart';
 
@@ -11,19 +12,19 @@ part 'history_provider.g.dart';
 class History extends _$History with Persistable<List<int>, String, String> {
   @override
   FutureOr<List<int>> build(int id, {required int page}) async {
-    final storage = await ref.watch(storageProvider.future);
+    // final storage = await ref.watch(storageProvider.future);
     print("executing historyProvider($page)");
 
-    await persist(
-      key: 'history-$id-$page',
-      storage: storage,
-      encode: (state) => jsonEncode(state),
-      decode: (encoded) {
-        final decoded = jsonDecode(encoded) as List<Object?>;
-        return decoded.cast<int>();
-      },
-    );
-    print("stored historyProvider($page)");
+    // await persist(
+    //   key: 'history-$id-$page',
+    //   storage: storage,
+    //   encode: (state) => jsonEncode(state),
+    //   decode: (encoded) {
+    //     final decoded = jsonDecode(encoded) as List<Object?>;
+    //     return decoded.cast<int>();
+    //   },
+    // );
+    // print("stored historyProvider($page)");
 
     if (page == 0) {
       final items = await ref.watch(cursorProvider(id, cursor: null).future);

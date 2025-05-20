@@ -52,7 +52,7 @@ final class HistoryProvider extends $AsyncNotifierProvider<History, List<int>> {
   }
 }
 
-String _$historyHash() => r'86f3b2c1cdf693219351fdc988ef96a71d8db61a';
+String _$historyHash() => r'79fef37706374e0931adfd4d5053bceaeb44ae8b';
 
 final class HistoryFamily extends $Family
     with
