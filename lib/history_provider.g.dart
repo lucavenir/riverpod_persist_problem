@@ -52,7 +52,7 @@ final class HistoryProvider extends $AsyncNotifierProvider<History, List<int>> {
   }
 }
 
-String _$historyHash() => r'47fafcb638dde8c252ebfe538399d47dd663e445';
+String _$historyHash() => r'86f3b2c1cdf693219351fdc988ef96a71d8db61a';
 
 final class HistoryFamily extends $Family
     with
@@ -151,7 +151,7 @@ final class CursorProvider
   }
 }
 
-String _$cursorHash() => r'f01097ee4e61182e1a491d6ab968738d3bc015db';
+String _$cursorHash() => r'd5affca715eb76c29b97a2f0c98e07e40c34f753';
 
 final class CursorFamily extends $Family
     with $FunctionalFamilyOverride<FutureOr<List<int>>, (int, {int? cursor})> {

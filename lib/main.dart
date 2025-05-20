@@ -41,7 +41,7 @@ class _MyHomePageState extends ConsumerState<MyHomePage> {
 
   @override
   Widget build(BuildContext context) {
-    ref.listen(historyProvider(99, page: 1000), (_, __) {});
+    ref.listen(historyProvider(99, page: 100), (_, __) {});
 
     return Scaffold(
       appBar: AppBar(
