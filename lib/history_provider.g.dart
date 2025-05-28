@@ -52,7 +52,7 @@ final class HistoryProvider extends $AsyncNotifierProvider<History, List<int>> {
   }
 }
 
-String _$historyHash() => r'79fef37706374e0931adfd4d5053bceaeb44ae8b';
+String _$historyHash() => r'f27fae1e57af64326eacb91455f40f7981013e6b';
 
 final class HistoryFamily extends $Family
     with
@@ -100,75 +100,6 @@ abstract class _$History extends $AsyncNotifier<List<int>> {
             >;
     element.handleValue(ref, created);
   }
-}
-
-@ProviderFor(cursor)
-const cursorProvider = CursorFamily._();
-
-final class CursorProvider
-    extends $FunctionalProvider<AsyncValue<List<int>>, FutureOr<List<int>>>
-    with $FutureModifier<List<int>>, $FutureProvider<List<int>> {
-  const CursorProvider._({
-    required CursorFamily super.from,
-    required (int, {int? cursor}) super.argument,
-  }) : super(
-         retry: null,
-         name: r'cursorProvider',
-         isAutoDispose: true,
-         dependencies: null,
-         $allTransitiveDependencies: null,
-       );
-
-  @override
-  String debugGetCreateSourceHash() => _$cursorHash();
-
-  @override
-  String toString() {
-    return r'cursorProvider'
-        ''
-        '$argument';
-  }
-
-  @$internal
-  @override
-  $FutureProviderElement<List<int>> $createElement($ProviderPointer pointer) =>
-      $FutureProviderElement(pointer);
-
-  @override
-  FutureOr<List<int>> create(Ref ref) {
-    final argument = this.argument as (int, {int? cursor});
-    return cursor(ref, argument.$1, cursor: argument.cursor);
-  }
-
-  @override
-  bool operator ==(Object other) {
-    return other is CursorProvider && other.argument == argument;
-  }
-
-  @override
-  int get hashCode {
-    return argument.hashCode;
-  }
-}
-
-String _$cursorHash() => r'd5affca715eb76c29b97a2f0c98e07e40c34f753';
-
-final class CursorFamily extends $Family
-    with $FunctionalFamilyOverride<FutureOr<List<int>>, (int, {int? cursor})> {
-  const CursorFamily._()
-    : super(
-        retry: null,
-        name: r'cursorProvider',
-        dependencies: null,
-        $allTransitiveDependencies: null,
-        isAutoDispose: true,
-      );
-
-  CursorProvider call(int id, {required int? cursor}) =>
-      CursorProvider._(argument: (id, cursor: cursor), from: this);
-
-  @override
-  String toString() => r'cursorProvider';
 }
 
 // ignore_for_file: type=lint
