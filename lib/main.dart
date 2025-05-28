@@ -69,13 +69,18 @@ class _HomePageState extends State<HomePage> {
 @riverpod
 @JsonPersist()
 class SomeStateController extends _$SomeStateController {
+  static const int value = 42;
   @override
   FutureOr<int> build() async {
+    ref.onDispose(() => print('state disposed'));
     final storage = await ref.watch(storageProvider.future);
     await persist(storage: storage);
-    await Future.delayed(const Duration(seconds: 1));
-    // return 42; // Uncomment this line to return a value
-    throw "LOL"; // Uncomment this line to simulate an error
+
+    if (state.value case null) {
+      return SomeStateController.value;
+    } else {
+      throw Exception('already initialized');
+    }
   }
 }
 
