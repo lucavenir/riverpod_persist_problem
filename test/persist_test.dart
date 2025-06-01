@@ -35,48 +35,16 @@ void main() {
 
     final container = ProviderContainer.test();
 
-    final firstTry = Completer<void>();
-    addTearDown(() {
-      if (!firstTry.isCompleted) firstTry.complete();
-    });
-    var reader = container.listen(testNotifierProvider, (_, next) {
-      if (next case AsyncError(:final error)) firstTry.completeError(error);
-    });
-    // wait for the first emit, should complete with value
-    await container.read(testNotifierProvider.future);
-    var state = reader.read();
-    expect(state, isA<AsyncData<int>>());
-    expect(state.value, equals(42));
-    expect(state.isFromCache, isTrue);
-    // wait for the last emit, should complete with error
-    await expectLater(firstTry.future, throwsA(isA<SomeException>()));
-    state = reader.read();
-    expect(state, isA<AsyncError<int>>());
-    expect(state.error, isA<SomeException>());
-    expect(state.value, equals(42));
-    expect(state.isFromCache, isTrue); // FAILS
-    reader.close();
+    container.read(testNotifierProvider);
+    await container.pump(); // wait for dispose
 
-    await container.pump();
-    final secondTry = Completer<void>();
-    addTearDown(() {
-      if (!secondTry.isCompleted) secondTry.complete();
-    });
-    reader = container.listen(testNotifierProvider, (_, next) {
-      if (next case AsyncError(:final error)) secondTry.completeError(error);
-    });
-    // wait for the first emit, should complete with value
-    await container.read(testNotifierProvider.future); // THROWS
-    state = reader.read();
-    expect(state, isA<AsyncData<int>>());
-    expect(state.value, equals(42));
-    expect(state.isFromCache, isTrue);
-    // wait for the last emit, should complete with error
-    await expectLater(secondTry.future, throwsA(isA<SomeException>()));
-    state = reader.read();
-    expect(state, isA<AsyncError<int>>());
-    expect(state.error, isA<SomeException>());
-    expect(state.value, equals(42));
-    // expect(state.isFromCache, isTrue);  // FAILS
+    await expectLater(
+      container.read(testNotifierProvider.future),
+      completion(42), // must complete normally
+    ); // FAILS
+    final read = container.read(testNotifierProvider);
+    expect(read.value, equals(42));
+    expect(read.isFromCache, isTrue);
+    expect(read.error, isNull);
   });
 }
