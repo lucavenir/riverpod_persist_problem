@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/experimental/persist.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -32,38 +34,49 @@ void main() {
     storage.write('key', 42, const StorageOptions());
 
     final container = ProviderContainer.test();
-    var reader = container.listen(testNotifierProvider, (_, __) {});
-    // fails - it computes to AsyncData<int>(value: 42)
-    await expectLater(
-      container.read(testNotifierProvider.future),
-      throwsA(isA<SomeException>()),
-    );
 
+    final firstTry = Completer<void>();
+    addTearDown(() {
+      if (!firstTry.isCompleted) firstTry.complete();
+    });
+    var reader = container.listen(testNotifierProvider, (_, next) {
+      if (next case AsyncError(:final error)) firstTry.completeError(error);
+    });
+    // wait for the first emit, should complete with value
+    await container.read(testNotifierProvider.future);
     var state = reader.read();
-    // fails - it computes to AsyncData<int>(value: 42)
-    expect(state, isA<AsyncError<int>>());
-    // fails - it claims there's no error
-    expect(state.error, isA<SomeException>());
+    expect(state, isA<AsyncData<int>>());
     expect(state.value, equals(42));
     expect(state.isFromCache, isTrue);
-    reader.close();
-
-    await container.pump();
-
-    reader = container.listen(testNotifierProvider, (_, __) {});
-    // here, since the persisted value has (for some reason) been destroyed
-    // no error is thrown
-    await expectLater(
-      container.read(testNotifierProvider.future),
-      throwsA(isA<SomeException>()),
-    );
-
+    // wait for the last emit, should complete with error
+    await expectLater(firstTry.future, throwsA(isA<SomeException>()));
     state = reader.read();
     expect(state, isA<AsyncError<int>>());
     expect(state.error, isA<SomeException>());
-    // fails - there's no value
     expect(state.value, equals(42));
-    // fails - there's no cached value
+    expect(state.isFromCache, isTrue); // FAILS
+    reader.close();
+
+    await container.pump();
+    final secondTry = Completer<void>();
+    addTearDown(() {
+      if (!secondTry.isCompleted) secondTry.complete();
+    });
+    reader = container.listen(testNotifierProvider, (_, next) {
+      if (next case AsyncError(:final error)) secondTry.completeError(error);
+    });
+    // wait for the first emit, should complete with value
+    await container.read(testNotifierProvider.future); // THROWS
+    state = reader.read();
+    expect(state, isA<AsyncData<int>>());
+    expect(state.value, equals(42));
     expect(state.isFromCache, isTrue);
+    // wait for the last emit, should complete with error
+    await expectLater(secondTry.future, throwsA(isA<SomeException>()));
+    state = reader.read();
+    expect(state, isA<AsyncError<int>>());
+    expect(state.error, isA<SomeException>());
+    expect(state.value, equals(42));
+    // expect(state.isFromCache, isTrue);  // FAILS
   });
 }
