@@ -1,7 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-class HomeNotifier extends AutoDisposeNotifier<int> {
+class HomeNotifier extends Notifier<int> {
   @override
   int build() => 0;
 }
@@ -10,7 +10,7 @@ final homeNotifierProvider = NotifierProvider.autoDispose<HomeNotifier, int>(
   HomeNotifier.new,
 );
 
-class AnotherNotifier extends AutoDisposeNotifier<int> {
+class AnotherNotifier extends Notifier<int> {
   @override
   int build() => 0;
 
