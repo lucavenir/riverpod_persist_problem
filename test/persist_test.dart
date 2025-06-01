@@ -16,8 +16,12 @@ class TestNotifier extends AsyncNotifier<int>
       decode: (encoded) => encoded,
     );
 
-    throw FormatException("only works with storage");
+    throw const SomeException();
   }
+}
+
+class SomeException implements Exception {
+  const SomeException();
 }
 
 final testNotifierProvider =
@@ -29,32 +33,37 @@ void main() {
 
     final container = ProviderContainer.test();
     var reader = container.listen(testNotifierProvider, (_, __) {});
+    // fails - it computes to AsyncData<int>(value: 42)
+    await expectLater(
+      container.read(testNotifierProvider.future),
+      throwsA(isA<SomeException>()),
+    );
 
     var state = reader.read();
-    // expect(state, isA<AsyncLoading<int>>());  // why does this fail?
-    expect(state, isA<AsyncData<int>>());
-    expect(state.error, isNull);
-    expect(state.value, 42);
-    expect(state.isFromCache, true);
-    await container.pump();
-    state = reader.read();
+    // fails - it computes to AsyncData<int>(value: 42)
     expect(state, isA<AsyncError<int>>());
-    expect(state.error, isFormatException);
-    expect(state.value, 42);
-    // expect(state.isFromCache, true); // why does this fail?
+    // fails - it claims there's no error
+    expect(state.error, isA<SomeException>());
+    expect(state.value, equals(42));
+    expect(state.isFromCache, isTrue);
     reader.close();
+
     await container.pump();
 
     reader = container.listen(testNotifierProvider, (_, __) {});
+    // here, since the persisted value has (for some reason) been destroyed
+    // no error is thrown
+    await expectLater(
+      container.read(testNotifierProvider.future),
+      throwsA(isA<SomeException>()),
+    );
+
     state = reader.read();
-    expect(state, isA<AsyncLoading<int>>());
-    expect(state.error, isNull);
-    expect(state.value, isNull);
-    expect(state.isFromCache, false);
-    await container.pump();
-    state = reader.read();
-    expect(state.isFromCache, true); // fails
-    expect(state.value, 42); // fails
-    expect(state, isA<AsyncData<int>>()); // fails
+    expect(state, isA<AsyncError<int>>());
+    expect(state.error, isA<SomeException>());
+    // fails - there's no value
+    expect(state.value, equals(42));
+    // fails - there's no cached value
+    expect(state.isFromCache, isTrue);
   });
 }
