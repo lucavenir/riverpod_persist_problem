@@ -1,37 +1,41 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_riverpod/misc.dart';
 
 class MyObserver extends ProviderObserver {
   const MyObserver();
-  @override
-  void didAddProvider(ProviderObserverContext context, Object? value) {
-    print("provider ${context.provider} added with value: $value");
-  }
 
   @override
-  void providerDidFail(
-    ProviderObserverContext context,
-    Object error,
-    StackTrace stackTrace,
+  void didAddProvider(
+    ProviderBase provider,
+    Object? value,
+    ProviderContainer container,
   ) {
-    print("provider ${context.provider} failed with error: $error");
+    print("provider $provider added with value: $value");
   }
 
   @override
   void didUpdateProvider(
-    ProviderObserverContext context,
+    ProviderBase provider,
     Object? previousValue,
     Object? newValue,
+    ProviderContainer container,
   ) {
-    print(
-      "provider ${context.provider} updated from $previousValue to $newValue",
-    );
+    print("provider $provider updated from $previousValue to $newValue");
   }
 
   @override
-  void didDisposeProvider(ProviderObserverContext context) {
-    print("provider ${context.provider} disposed");
+  void didDisposeProvider(ProviderBase provider, ProviderContainer container) {
+    print("provider $provider disposed");
+  }
+
+  @override
+  void providerDidFail(
+    ProviderBase provider,
+    Object error,
+    StackTrace stackTrace,
+    ProviderContainer container,
+  ) {
+    print("provider $provider failed with error: $error");
   }
 }
 
@@ -54,7 +58,7 @@ class MyApp extends StatelessWidget {
   }
 }
 
-class HomeNotifier extends Notifier<int> {
+class HomeNotifier extends AutoDisposeNotifier<int> {
   late KeepAliveLink _link;
 
   @override
@@ -76,7 +80,7 @@ final homeNotifierProvider = NotifierProvider.autoDispose<HomeNotifier, int>(
   HomeNotifier.new,
 );
 
-class AnotherNotifier extends Notifier<int> {
+class AnotherNotifier extends AutoDisposeNotifier<int> {
   @override
   int build() {
     return 0;
