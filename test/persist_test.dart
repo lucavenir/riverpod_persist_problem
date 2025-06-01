@@ -1,64 +1,60 @@
 import 'package:flutter_riverpod/experimental/persist.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mocktail/mocktail.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
-import 'package:riverpod_persist_problem/main.dart';
-import 'package:riverpod_sqflite/riverpod_sqflite.dart';
 
-void main() {
-  setUpAll(() {
-    registerFallbackValue(StorageOptions());
-  });
-  test("self-reading persistable provider should compute normally", () async {
-    final mockedStorage = StorageMock();
-    const mockedValue = SomeStateController.value;
-    const mockedData = "$mockedValue";
-    when(() => mockedStorage.read(any())).thenAnswer((_) async => null);
-    when(
-      () => mockedStorage.write(any(), any(), any()),
-    ).thenAnswer((_) async => mockedData);
-    when(() => mockedStorage.delete(any())).thenAnswer((_) async {});
-    when(() => mockedStorage.close()).thenAnswer((_) async {});
+final storage = Storage<String, int>.inMemory();
 
-    final container = ProviderContainer.test(
-      overrides: [storageProvider.overrideWith((ref) => mockedStorage)],
+class TestNotifier extends AsyncNotifier<int>
+    with Persistable<int, String, int> {
+  @override
+  FutureOr<int> build() async {
+    await persist(
+      key: 'key',
+      storage: storage,
+      encode: (state) => state,
+      decode: (encoded) => encoded,
     );
 
-    var reader = container.listen(
-      someStateControllerProvider,
-      (previous, next) {},
-    );
-
-    await container.pump();
-    await Future.delayed(const Duration(milliseconds: 50));
-    switch (reader.read()) {
-      case AsyncValue(:final value?):
-        expect(value, equals(mockedValue));
-      case final something:
-        fail(
-          "there should be an error emitted, while still having the cached value got: $something",
-        );
-    }
-    reader.close();
-    await container.pump();
-    await Future.delayed(const Duration(milliseconds: 50));
-
-    when(
-      () => mockedStorage.read(any()),
-    ).thenAnswer((_) async => PersistedData(mockedData));
-
-    reader = container.listen(someStateControllerProvider, (previous, next) {});
-    await container.pump();
-    await Future.delayed(const Duration(milliseconds: 50));
-    switch (reader.read()) {
-      case AsyncValue(isFromCache: true, hasError: true, :final value?):
-        expect(value, equals(mockedValue));
-      case final something:
-        fail(
-          "we'd expect the cached value to be emitted, but `isFromCache` is ${something.isFromCache}; got: $something",
-        );
-    }
-  });
+    throw FormatException("only works with storage");
+  }
 }
 
-class StorageMock<KeyT, EncodedT> extends Mock implements JsonSqFliteStorage {}
+final testNotifierProvider =
+    AsyncNotifierProvider.autoDispose<TestNotifier, int>(TestNotifier.new);
+
+void main() {
+  test('If an AsyncNotifier throws, decoded value is preserved', () async {
+    storage.write('key', 42, const StorageOptions());
+
+    final container = ProviderContainer.test();
+    var reader = container.listen(testNotifierProvider, (_, __) {});
+
+    var state = reader.read();
+    // expect(state, isA<AsyncLoading<int>>());  // why does this fail?
+    expect(state, isA<AsyncData<int>>());
+    expect(state.error, isNull);
+    expect(state.value, 42);
+    expect(state.isFromCache, true);
+    await container.pump();
+    state = reader.read();
+    expect(state, isA<AsyncError<int>>());
+    expect(state.error, isFormatException);
+    expect(state.value, 42);
+    // expect(state.isFromCache, true); // why does this fail?
+    reader.close();
+    await container.pump();
+
+    reader = container.listen(testNotifierProvider, (_, __) {});
+    state = reader.read();
+    expect(state, isA<AsyncLoading<int>>());
+    expect(state.error, isNull);
+    expect(state.value, isNull);
+    expect(state.isFromCache, false);
+    await container.pump();
+    state = reader.read();
+    expect(state.isFromCache, true); // fails
+    expect(state.value, 42); // fails
+    expect(state, isA<AsyncData<int>>()); // fails
+  });
+}
