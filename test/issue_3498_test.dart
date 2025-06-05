@@ -1,9 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_persist_problem/observer.dart';
+import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  runApp(const ProviderScope(child: MyApp()));
+  testWidgets('combining values work with widgets', (tester) async {
+    await tester.pumpWidget(const ProviderScope(child: MyApp()));
+
+    expect(find.text('is combined? false'), findsOneWidget);
+
+    await tester.pumpAndSettle();
+
+    expect(find.text('is combined? true'), findsOneWidget);
+    expect(find.text('second: 42, combined 42'), findsOneWidget);
+  });
 }
 
 class MyApp extends ConsumerWidget {
