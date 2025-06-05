@@ -1,3 +1,4 @@
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:async';
@@ -61,22 +62,26 @@ class MyObserver extends ProviderObserver {
 
 void main() {
   test("adding and removing a dep shouldn't stop its listeners", () {
-    final container = ProviderContainer.test(observers: const [MyObserver()]);
-
-    Future.delayed(Duration.zero, () async {
+    fakeAsync((async) async {
+      final container = ProviderContainer.test(observers: const [MyObserver()]);
       Future<void> pushAndPop() async {
         final sub2 = container.listen(provider2, (previous, next) {});
         await Future.microtask(() {});
         sub2.close();
       }
 
-      await pushAndPop();
-      await Future.delayed(Duration.zero);
-      await pushAndPop();
+      unawaited(
+        Future.delayed(Duration.zero, () async {
+          await pushAndPop();
+          await Future.delayed(Duration.zero);
+          await pushAndPop();
+        }),
+      );
+
+      container.listen(provider1, (previous, next) {});
+      async.elapse(Duration.zero);
+
+      expectLater(container.read(numberProvider.future), completes);
     });
-
-    container.listen(provider1, (previous, next) {});
-
-    expectLater(container.read(numberProvider.future), completes);
   });
 }
