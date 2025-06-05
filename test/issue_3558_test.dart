@@ -1,14 +1,27 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_persist_problem/observer.dart';
 
 class MyNotifier extends Notifier<int> {
+  @protected
+  late int internal;
   @override
-  int build() => 0;
-  void increment() => state++;
+  int build() {
+    internal = 0;
+    return internal;
+  }
+
+  void increment() {
+    state++;
+    internal = state;
+  }
 }
 
-final myNotifierProvider = NotifierProvider<MyNotifier, int>(MyNotifier.new);
+final myNotifierProvider = NotifierProvider.autoDispose<MyNotifier, int>(
+  MyNotifier.new,
+  name: 'myNotifierProvider',
+);
 
 void main() {
   test('ref.exists should be false on invalidated providers', () async {
