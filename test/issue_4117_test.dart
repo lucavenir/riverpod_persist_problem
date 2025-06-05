@@ -1,7 +1,6 @@
-import 'dart:async';
-
-import 'package:flutter/material.dart';
+import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'dart:async';
 
 final provider1 = FutureProvider.autoDispose(
   (ref) => ref.watch(numberProvider.future),
@@ -61,62 +60,23 @@ class MyObserver extends ProviderObserver {
 }
 
 void main() {
-  runApp(ProviderScope(observers: [const MyObserver()], child: const MyApp()));
-}
+  test("adding and removing a dep shouldn't stop its listeners", () {
+    final container = ProviderContainer.test(observers: const [MyObserver()]);
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return const ProviderScope(child: MaterialApp(home: Screen1()));
-  }
-}
-
-class Screen1 extends ConsumerStatefulWidget {
-  const Screen1({super.key});
-
-  @override
-  ConsumerState<Screen1> createState() => _Screen1State();
-}
-
-class _Screen1State extends ConsumerState<Screen1> {
-  @override
-  void initState() {
-    super.initState();
     Future.delayed(Duration.zero, () async {
-      Future<void> pushPop() async {
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => const Screen2()),
-        );
-        await Future.delayed(Duration(seconds: 1));
-        if (!mounted) return;
-        Navigator.of(context).pop();
+      Future<void> pushAndPop() async {
+        final sub2 = container.listen(provider2, (previous, next) {});
+        await Future.microtask(() {});
+        sub2.close();
       }
 
-      await pushPop();
-      await Future.delayed(Duration(seconds: 1));
-      await pushPop();
+      await pushAndPop();
+      await Future.delayed(Duration.zero);
+      await pushAndPop();
     });
-  }
 
-  @override
-  Widget build(BuildContext context) {
-    final value = ref.watch(provider1);
-    return Scaffold(body: Center(child: Text(value.value.toString())));
-  }
-}
+    container.listen(provider1, (previous, next) {});
 
-class Screen2 extends ConsumerWidget {
-  const Screen2({super.key});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final value = ref.watch(provider2);
-    return Scaffold(
-      appBar: AppBar(),
-      body: Center(child: Text(value.value.toString())),
-    );
-  }
+    expectLater(container.read(numberProvider.future), completes);
+  });
 }
