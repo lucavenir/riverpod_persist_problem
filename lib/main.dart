@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:riverpod_persist_problem/history_provider.dart';
+import 'package:riverpod_persist_problem/test_notifier_provider.dart';
 
 void main() {
   runApp(ProviderScope(child: const MyApp()));
@@ -41,7 +41,7 @@ class _MyHomePageState extends ConsumerState<MyHomePage> {
 
   @override
   Widget build(BuildContext context) {
-    ref.listen(historyProvider(99, page: 100), (_, __) {});
+    ref.listen(testNotifierProvider(100), (_, __) {});
 
     return Scaffold(
       appBar: AppBar(
