@@ -78,10 +78,12 @@ void main() {
     // wait for the first page to read the persisted value
     await container.read(testNotifierProvider(0).future);
     // wait for the 100th page to compute
-    await container.read(testNotifierProvider(1000).future);
+    var future = container.read(testNotifierProvider(90).future);
+    expectLater(future, completes);
+    await future;
     // the first page gets value from the network, others must recompute
     await container.pump();
 
-    expectLater(container.read(testNotifierProvider(1000).future), completes);
+    expectLater(container.read(testNotifierProvider(10).future), completes);
   });
 }
