@@ -2,25 +2,39 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:riverpod_persist_problem/observer.dart';
 
-final someProvider1 = NotifierProvider.autoDispose<ValueStreamProvider, int>(
-  ValueStreamProvider.new,
+final streamController = StreamController<int>.broadcast();
+
+final streamNP = NotifierProvider.autoDispose<StreamN, int>(
+  StreamN.new,
+  name: "streamNP",
 );
 
-class ValueStreamProvider extends Notifier<int> {
+class StreamN extends Notifier<int> {
   @override
-  int build() => 0;
+  int build() {
+    final listener = streamController.stream.listen((event) {
+      print("event received: $event");
+
+      if (event != stateOrNull) {
+        state = event;
+      }
+    });
+    ref.onDispose(listener.cancel);
+
+    return stateOrNull ?? 0;
+  }
 }
 
-final someProvider2 = Provider.autoDispose<int>(
-  (ref) => ref.watch(someProvider1),
-);
+final firstP = Provider<int>((ref) {
+  return ref.watch(streamNP);
+}, name: "firstP");
 
-final someProvider3 = FutureProvider.autoDispose<int>((ref) async {
-  final _ = ref.watch(someProvider2);
-
+final secondP = FutureProvider<int>((ref) async {
+  final _ = ref.watch(firstP);
   return 1;
-});
+}, name: "secondP");
 
 class App extends StatefulWidget {
   const App({super.key});
@@ -33,36 +47,38 @@ class _AppState extends State<App> {
   bool _isVisible = true;
 
   @override
-  Widget build(BuildContext context) {
-    return WidgetsApp(
-      color: const Color(0xFFFFFFFF),
-      builder: (context, child) {
-        return Column(
-          children: [
-            TextButton(
-              onPressed: () {
-                setState(() {
-                  _isVisible = !_isVisible;
-                });
-              },
-              child: const Text('Toggle Visibility'),
-            ),
-            if (_isVisible)
-              Consumer(
-                builder: (context, ref, child) {
-                  final value = ref.watch(someProvider2);
-                  final _ = ref.watch(someProvider3).value;
+  Widget build(BuildContext context) => WidgetsApp(
+    color: const Color(0xFFFFFFFF),
+    builder: (context, child) {
+      return Column(
+        children: [
+          TextButton(
+            onPressed: () {
+              setState(() {
+                _isVisible = !_isVisible;
+              });
+            },
+            child: const Text('Toggle Visibility'),
+          ),
+          if (_isVisible)
+            Consumer(
+              builder: (context, ref, child) {
+                final value = ref.watch(firstP);
+                final _ = ref.watch(secondP).value;
 
-                  return Column(children: [Text('$value')]);
-                },
-              ),
-          ],
-        );
-      },
-    );
-  }
+                return Column(children: [Text('$value')]);
+              },
+            ),
+        ],
+      );
+    },
+  );
 }
 
-void main(List<String> args) {
-  runApp(const ProviderScope(child: App()));
+void main(List<String> args) async {
+  Timer.periodic(const Duration(seconds: 1), (timer) {
+    streamController.add(timer.tick);
+  });
+
+  runApp(const ProviderScope(observers: [MyObserver()], child: App()));
 }
